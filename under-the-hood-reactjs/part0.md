@@ -2,7 +2,7 @@
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/0/part-0.svg)
 
-## 笔记
+## 内容
 
 ### JSX
 
@@ -128,7 +128,7 @@ Part-0 的内容可以概括如下：
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/0/part-0-B.svg)
 
-更简练的：
+实质：
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/0/part-0-C.svg)
 

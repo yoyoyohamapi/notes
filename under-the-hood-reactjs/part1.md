@@ -2,7 +2,9 @@
  
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/1/part-1.svg)
 
-## Transaction（事务）
+## 内容
+
+### Transaction（事务）
 
 `ReactUpdates` 模块能够将上一章中初始化的 React component 实例**连接**到 React 的生态中，React 是**成块（chunk）更新的**，并且会为一系列的 chunk 应用一些**前置条件（pre-condition）**和**后置条件（post-condition）**，因此引入了事务这个模式。
 
@@ -58,7 +60,7 @@ Part-1 可以概括为：
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/1/part-1-B.svg)
 
-更简练地：
+实质：
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/1/part-1-C.svg)
 
