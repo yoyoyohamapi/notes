@@ -1,4 +1,4 @@
-# Part-1
+# Part 1
  
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/1/part-1.svg)
 

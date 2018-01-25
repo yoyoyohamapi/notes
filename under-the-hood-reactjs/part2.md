@@ -1,4 +1,6 @@
-# Part-2
+# Part 2
+
+![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/2/part-2.svg)
 
 ## 内容
 
@@ -77,7 +79,7 @@ var TRANSACTION_WRAPPERS = [
 2. 恢复事件监听
 3. 唤起 `onDOMReady` 队列上的各个回调
 
-再看到该事务服务的方法 `mountComponentIntoNode()`：
+再看到该事务包裹的方法 `mountComponentIntoNode()`：
 
 ```js
 // src/renderers/dom/client/ReactMount.js#92
@@ -130,7 +132,17 @@ var ReactReconciler = {
 }
 ```
 
-可以看到，组件的挂载还是委托给了组件自身实例，挂载过程也是我们知道的：初始化组件 --> 渲染组件组成 --> 为组件注册事件。
+可以看到，组件的挂载还是委托给了组件自身实例，挂载过程也是我们知道的：初始化组件 --> 渲染组件组成 --> 为组件注册事件。在我们的 deme 中，上述代码中依次进行挂载的 `internalInstance` （React Component 实例）是：
+
+```js
+ReactCompositeComponentWrapper(TopLevelWrapper)
+ReactCompositeComponentWrapper(<ExampleApplication />)
+ReactDOMComponent(<div />)
+ReactDOMComponent(<button />)
+ReactCompositeComponentWrapper(<ChildCmp />)
+ReactDOMComponent(<div />)
+ReactDOMTextComponent("And some text as well!")
+```
 
 ## 总结
 
