@@ -2,6 +2,8 @@
 
 ## 内容
 
+!()[https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/5/part-5.svg]
+
 ### DOM 属性更新
 
 在 React DOM Component 挂载的时候，还会更新 DOM 属性：
