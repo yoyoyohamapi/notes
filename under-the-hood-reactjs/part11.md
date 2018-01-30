@@ -177,3 +177,28 @@ ReactReconciler.receiveComponent(
 本质上：
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/11/part-11-C.svg)
+
+## 补充
+
+### 装饰器
+
+在 React 源码中，我们看到，生命周期钩子的调用都使用了一个函数装饰器 `measureLifeCyclePerf`，借助于装饰器，我们可以在函数运行前后完成一些额外工作，比如这个例子中，就是在调试时通过 debug 工具进行性能标记： 
+
+```js
+function measureLifeCyclePerf(fn, debugID, timerType) {
+  if (debugID === 0) {
+    // Top-level wrappers (see ReactMount) and empty components (see
+    // ReactDOMEmptyComponent) are invisible to hooks and devtools.
+    // Both are implementation details that should go away in the future.
+    return fn();
+  }
+
+  ReactInstrumentation.debugTool.onBeginLifeCycleTimer(debugID, timerType);
+  try {
+    return fn();
+  } finally {
+    ReactInstrumentation.debugTool.onEndLifeCycleTimer(debugID, timerType);
+  }
+}
+```
+
