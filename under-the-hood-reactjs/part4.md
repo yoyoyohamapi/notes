@@ -150,10 +150,7 @@ function assertValidProps(component, props) {
 }
 ```
 
-例如，校验 `props.dangerouslySetInnerHTML` 是否含有 `__html` 属性，校验 `props.style` 是否是一个对象等：
-
-```js
-```
+例如，校验 `props.dangerouslySetInnerHTML` 是否含有 `__html` 属性，校验 `props.style` 是否是一个对象等。
 
 
 ### 创建 HTML
