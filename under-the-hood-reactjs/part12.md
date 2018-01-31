@@ -2,7 +2,9 @@
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/12/part-12.svg)
 
-## `shouldUpdateReactComponent`
+## 内容
+
+### `shouldUpdateReactComponent`
 
 上一部分中，我们知道，借由 `shouldUpdateReactComponent` 模块，可以判断当前组件实例是应当更新？销毁？还是重新创建一个新的实例，接下来我们分析其执行流程。
 
