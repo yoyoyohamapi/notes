@@ -1,3 +1,5 @@
+
+
 # Part 14
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/14/part-14.svg)
@@ -147,3 +149,41 @@ if (lastChildren != null && nextChildren == null) {
 现在，整个更新过程也可以概括为：
 
 ![](https://rawgit.com/Bogdan-Lyashenko/Under-the-hood-ReactJS/master/stack/images/14/updating-parts-C.svg)
+
+## 补充
+
+### Diff 算法概括
+
+0. 现在，我们有一棵组件树:
+
+   ![](./tree.png)
+
+1. 某些组件的 `setState()` 操作使其变成了一个状态不确定的脏组件（dirty components）：
+
+   ![](./dirty-components.png)
+
+2. 这些组件将有可能进行重新渲染，因此会形成一棵新的组件树:
+
+   ![](./render.png)
+
+3. React 会对新旧两棵树进行差异比较（reconciliation）算法，尽可能减少更新开销。如果树中的某个组件类型都变了，则直接卸载原组件及其子孙，挂载新的组件：
+
+   ![](./different-type.png)
+
+4. 如果是同类型的组件，则开始比较子孙，并进行更新，通过 `key`，我们能最大限度地优化更新效率：
+
+   ![](./same-type.png)
+
+5. 子孙的更新操作可能是**移动**、**删除**、**插入**，React 会分别进行处理：
+
+   ![](./complex.PNG)
+
+6. 另外，我们也可以通过 `shouldComponentUpdate()` 手动控制 React 组件的更新：
+
+   ![](./shouldComponentUpdate.png)
+
+
+
+## 参考资料
+
+- [React Internals: Introduction to React.js diff “algorithm”](https://www.youtube.com/watch?v=2TYstiGDJnc)
