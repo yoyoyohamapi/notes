@@ -1,4 +1,4 @@
-# WebSockets 和 HTTP/2
+# WebSockets 和 HTTP/2 + SSE
 
 ## 长轮训
 
