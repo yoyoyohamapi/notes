@@ -28,7 +28,7 @@ function sink(type, data) {
 }
 ```
 
-当 `type=1` 时，sink 可以处理抽到的数据：
+当 `type=1` 时，sink 可以处理获得的数据：
 
 ```js
 function sink(type, data) {
@@ -82,7 +82,7 @@ function makeSink() {
 
 ### Puller
 
-一个 puller sink 也可以向 source 发送数据：
+一个 puller sink 也可以向 source 请求数据：
 
 ```js
 let handle;
@@ -182,7 +182,7 @@ function source(start, sink) {
             else sink(2);
         }
     }
-    sink(1, talkback)
+    sink(0, talkback)
 }
 ```
 
@@ -218,7 +218,7 @@ const multiplyBy = factor => inputSource => {
     if (start !== 0) return;
     inputSource(0, (t, d) => {
       if (t === 1) outputSink(1, d * factor);
-      else outputSink(t, d);
+      else outputSink(1, d * factor);
     });
   };
 }

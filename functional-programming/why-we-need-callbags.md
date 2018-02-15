@@ -93,7 +93,7 @@ function observer(msgType, msgPayload) {
   consumer(0, producer): void
   ```
 
-  - **开始时，将 producer 传给 consumer，即 payload 为 producer**
+  - **在 pull 模型中，producer 需要向 consumer 问好，告诉 consumer 有需要时，从哪里取值**
 
 - ```
   consumer(1, data): void
@@ -125,7 +125,7 @@ function observer(msgType, msgPayload) {
   producer(1, data): void
   ```
 
-  - **数据传输时， 从 consumer 处接收到数据**
+  - **这时，意味着 consumer 需要向 prodcuer 取值**
 
 - ```
   producer(2): void
