@@ -189,13 +189,11 @@ println!("x = {}, y = {}", x, y);
 
 在这段代码中，由于 `5` 是已知且大小固定的，因此数据是在栈上存储的， `x` 也就不需要移动到 `y`，而是直接进行栈数据的拷贝。
 
-Rust 通过类型上的 `Copy` trait 进行栈上的数据烤白。如果一个类型含有 `Copy` trait，那么旧的变量在赋值后仍可以使用。如果某个类型或者该类型的某个部分已经实现了 `Drop` trait，Rust 就不允许再声明 `Copy` trait。如果类型需要在离开作用域时进行一些处理，再为其声明 `Copy` 特性就会导致编译错误。
+Rust 通过类型上的 `Copy` trait 进行栈上的数据拷贝。如果一个类型含有 `Copy` trait，那么旧的变量在赋值后仍可以使用。如果某个类型或者该类型的某个部分已经实现了 `Drop` trait，Rust 就不允许再声明 `Copy` trait。如果类型需要在离开作用域时进行一些处理，再为其声明 `Copy` 特性就会导致编译错误。
 
 ## 所有权与函数
 
 传递某个值给函数类似于将某个值赋给变量，要么进行移动，要么进行拷贝。
-
- Passing a variable to a function will move or copy, just like assignment. Listing 4-3 has an example with some annotations showing where variables go into and out of scope:
 
 ```rust
 fn main() {
