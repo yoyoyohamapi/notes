@@ -1,4 +1,4 @@
-# 追踪 DOM 变化
+# a追踪 DOM 变化
 
 ## 使用 MutationObserver 
 
