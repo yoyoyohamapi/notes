@@ -241,3 +241,96 @@ fn main() {
 }
 ```
 
+## `Rc<T>`：引用计数 smart pointer
+
+多数时候，所有权是容易知晓的：你可以知道哪个变量拥有给定的值。但是有些时候，某个值可能被多个变量拥有。
+
+例如一个图，多个边可能指向同一个顶点，此时，该节点就被这些边所拥有。
+
+Rust 提供了 `Rc<T>` 来完成引用计数。当我们想要程序多个部分都会读取的数据进行堆上的内存分配，我们又无法在编译期确定哪个部分最后消耗数据，就考虑使用 `Rc<T>`。如果我们知道最后消耗数据的代码，我们可以让那部分称为数据的所有者，从而在编译期应用所有权规则即可。
+
+## 问题
+
+假定我们有下面的 3 个 cons list，并且它们的关系为：
+
+![](https://doc.rust-lang.org/book/second-edition/img/trpl15-03.svg)
+
+据此，我们撰写的 Rust 代码就为：
+
+```rust
+enum List {
+    Cons(i32, Box<List>),
+    Nil,
+}
+
+use List::{Cons, Nil};
+
+fn main() {
+    let a = Cons(5, 
+        Box::new(Cons(10, 
+    		Box::new(Nil))));
+    let b = Cons(3, Box::new(a));
+    let c = Cons(4, Box::new(a));
+}
+```
+
+运行这段代码，无法通过编译：
+
+```
+error[E0382]: use of moved value: `a`
+  --> src/main.rs:13:30
+   |
+12 |     let b = Cons(3, Box::new(a));
+   |                              - value moved here
+13 |     let c = Cons(4, Box::new(a));
+   |                              ^ value used here after move
+   |
+   = note: move occurs because `a` has type `List`, which does not implement
+   the `Copy` trait
+```
+
+`a` 的所有权已经被转移了，无法再使用 `a` 了。
+
+## 引用计数
+
+```rust
+enum List {
+    Cons(i32, Rc<List>),
+    Nil,
+}
+
+use List::{Cons, Nil};
+use std::rc::Rc;
+
+fn main() {
+    let a = Rc::new(Cons(5, Rc::new(Cons(10, Rc::new(Nil)))));
+    let b = Cons(3, Rc::clone(&a));
+    let c = Cons(4, Rc::clone(&a));
+}
+```
+
+现在，当我们创建 `b` 的时候，不会再夺走 `a` 的所有权，而是 clone 一份 `a` 所持有的 `Rc<T>` （指针）。clone 操作会增加 `a` 的引用计数，当引用计数为 0 时，`a` 将会被清除。
+
+```rust
+fn main() {
+    let a = Rc::new(Cons(5, Rc::new(Cons(10, Rc::new(Nil)))));
+    println!("count after creating a = {}", Rc::strong_count(&a));
+    let b = Cons(3, Rc::clone(&a));
+    println!("count after creating b = {}", Rc::strong_count(&a));
+    {
+        let c = Cons(4, Rc::clone(&a));
+        println!("count after creating c = {}", Rc::strong_count(&a));
+    }
+    println!("count after c goes out of scope = {}", Rc::strong_count(&a));
+}
+```
+
+这段代码将输出：
+
+```
+count after creating a = 1
+count after creating b = 2
+count after creating c = 3
+count after c goes out of scope = 2
+```
+
