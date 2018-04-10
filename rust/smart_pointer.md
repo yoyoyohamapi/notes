@@ -241,7 +241,7 @@ fn main() {
 }
 ```
 
-## `Rc<T>`：引用计数 smart pointer
+## `Rc<T>`：引用计数
 
 多数时候，所有权是容易知晓的：你可以知道哪个变量拥有给定的值。但是有些时候，某个值可能被多个变量拥有。
 
@@ -333,4 +333,374 @@ count after creating b = 2
 count after creating c = 3
 count after c goes out of scope = 2
 ```
+
+## `RefCell<T>`
+
+Rust 中提供的**内在可变性（interior mutability）** 允许你改变不可变引用指向的数据。这一特性允许你绕过借用规则的限制，修改数据，因此，这个模式在数据内部使用了 `unsafe` 的代码（使用 safe API 包裹了 `unsafe` 的代码，数据因此还是在编译期保持了不可变性）。
+
+内在不变性仅只是遮蔽了编译期的借用规则，但是在运行时，你还是要保证对数据的引用满足借用规则。
+
+### 使用 `RefCell<T>` 保证运行时的借用规则
+
+再回顾下借用规则：
+
+- 任何时候，你可以拥有某个数据任意数目的不可变引用和**一个**可变引用。
+- 引用必须有效。
+
+`RefCell<T>` 和 `Box<T>` 都只能拥有数据的一个所有权。
+
+- `Box<T>` 需要在**编译期**满足借用规则。
+-  `RefCell<T>` 只需要在**运行时**满足借用规则。
+- `Box<T>` 违反借用规则时，编译不通过。
+- `RefCell<T>` 违反借用规则时，程序将 `panic!` 并退出。
+
+### 用例：Mock
+
+我们设计一个 LimitTracker，它跟踪当前我们调用次数和调用上限的距离，进行不同的提示：
+
+```rust
+pub trait Messenger {
+    fn send(&self, msg: &str);
+}
+
+pub struct LimitTracker<'a, T: 'a + Messenger> {
+    messanger: &a' T,
+    value: usize,
+    max: usize,
+}
+
+impl<'a, T> LimitTracker<'a, T> where T: Messenger {
+    pub fn new() {
+        LimitTracker {
+            messenger,
+            value: 0,
+            max,
+        }
+    }
+    
+    pub fn set_value(&mut self, value: usize) {
+        self.value = value;
+        let percentage_of_max = self.value as f64 / self.max as f64;
+        
+        if percentage_of_max >= 0.75 && percentage_of_max < 0.9 {
+            self.messenger.send("Warning: You've used up over 75% of your quota!");
+        } else if {
+            self.messenger.send("Urgent warning: You've used up over 90% of your quota!");
+        } else if {
+            self.messenger.send("Error: You are over your quota");
+        }
+    }
+    
+}
+```
+
+注意到，`Messenger` Trait 中，`send` 的函数签名使用的是**不可变**的 `self` 引用。
+
+下面我们撰写测试代码，创建一个 `MockMessenger` 来测试我们的 `LimitTracker`：
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct MockMessenger {
+        sent_messages: Vec<String>,
+    }
+
+    impl MockMessenger {
+        fn new() -> MockMessenger {
+            MockMessenger { sent_messages: vec![] }
+        }
+    }
+
+    impl Messenger for MockMessenger {
+        fn send(&self, message: &str) {
+            self.sent_messages.push(String::from(message));
+        }
+    }
+
+    #[test]
+    fn it_sends_an_over_75_percent_warning_message() {
+        let mock_messenger = MockMessenger::new();
+        let mut limit_tracker = LimitTracker::new(&mock_messenger, 100);
+
+        limit_tracker.set_value(80);
+
+        assert_eq!(mock_messenger.sent_messages.len(), 1);
+    }
+}
+```
+
+我们预期程序能输出 `'Warning: You've used up over 75% of your quota!'`。但是，程序无法通过编译：
+
+```
+error[E0596]: cannot borrow immutable field `self.sent_messages` as mutable
+  --> src/lib.rs:52:13
+   |
+51 |         fn send(&self, message: &str) {
+   |                 ----- use `&mut self` here to make mutable
+52 |             self.sent_messages.push(String::from(message));
+   |             ^^^^^^^^^^^^^^^^^^ cannot mutably borrow immutable field
+```
+
+`MockMessenger` 实现的 `send` 方法，`self` 是不可变引用，但在 `send` 内部，`MockMessenger` 改变了自己的 `sent_messages`。此时，我们可能会想实现 `send(&mut self, message)`，但 `Messenger` 提供的 `send` 函数签名不是如此。
+
+我们这段代码应该是合理的，但因为违反了借用规则，因此被 Rust 拒绝在了编译期。这时，我们可以使用 `RefCell<T>` 来让借用规则延后至**运行时**。
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cell:RefCell;
+    
+    struct MockMessenger {
+        sent_messages:: RefCell<Vec<String>>,
+    }
+    
+    impl MockMessenger {
+        fn new() -> MockMessenger {
+            MockMessenger { 
+                sent_messages: RefCell::new(vec![])
+            } 
+        }
+    }
+    
+    impl Messenger for MockMessenger {
+        fn send(&self, message: &str) {
+            self.sent_messages.borrow_mut().push(String::from(message));
+        }
+    }
+    
+    #[test]
+    fn it_sends_an_over_75_percent_warning_message() {
+        assert_eq!(mock_messenger.sent_messages.borrow().len(), 1);
+    }
+}
+```
+
+- `borrow_mut()`：在运行时借出数据的可变引用。
+- `borrow()`：在运行时借出数据的不可变引用。
+
+### 在运行时遵守借用规则
+
+在使用了 `RefCell<T>` 后，我们需要在**运行时遵守借用规则**：
+
+```rust
+impl Messenger for MockMessenger {
+    fn send(&self, message: &str) {
+         let mut one_borrow = self.sent_messages.borrow_mut();
+        let mut two_borrow = self.sent_messages.borrow_mut();
+
+        one_borrow.push(String::from(message));
+        two_borrow.push(String::from(message));
+    }
+}
+
+```
+
+上面代码在运行时没有遵循借用规则，程序将 panic 并且终止：
+
+```
+---- tests::it_sends_an_over_75_percent_warning_message stdout ----
+    thread 'tests::it_sends_an_over_75_percent_warning_message' panicked at
+    'already borrowed: BorrowMutError', src/libcore/result.rs:906:4
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+```
+
+### 拥有可变数据的多个所有权
+
+通过组合 `RefCell<T>` 和 `Rc<T>` ，还可以实现拥有某个**可变**数据的**多个**所有权。
+
+![](https://doc.rust-lang.org/book/second-edition/img/trpl15-03.svg)
+
+
+
+```rust
+#[derive(Debug)]
+enum List {
+    Cons(Rc<RefCell<i32>>, Rc<List>),
+    Nil
+}
+
+use List::{Cons, Nil};
+use std::rc::Rc;
+use std::cell::RefCell;
+
+fn main() {
+    let value = Rc::new(RefCell::new(5));
+    
+    let a = Rc::new(Cons(RefCell::clone(&value)), Rc::new(Nil));
+    let b = Cons(Rc::new(RefCell::new(6)), Rc::clone(&a));
+    let c = Cons(Rc::new(RefCell::new(10)), Rc::clone(&a));
+    
+    *value.borrow_mut() += 10;
+    
+    println!("a after = {:?}", a);
+    println!("b after = {:?}", b);
+    println!("c after = {:?}", c);
+}
+```
+
+运行程序，将输出：
+
+```
+a after = Cons(RefCell { value: 15 }, Nil)
+b after = Cons(RefCell { value: 6 }, Cons(RefCell { value: 15 }, Nil))
+c after = Cons(RefCell { value: 10 }, Cons(RefCell { value: 15 }, Nil))
+```
+
+## 循环引用与 `Weak<T>`
+
+下面这段代码将创建一个循环引用：
+
+```rust
+use std::rc::Rc;
+use std::cell::RefCell;
+use List::{Cons, Nil};
+
+#[derive(Debug)]
+enum List {
+  Cons(i32, RefCell<Rc<List>>), // 使得链接的 List 能够在运行时拥有多个可变引用
+  Nil
+}
+
+impl List {
+  fn tail(&self) -> Option<&RefCell<Rc<List>>> {
+    match *self {
+      Cons(_, ref item) => Some(item),
+      Nil => None
+    }
+  }
+}
+
+fn main() {
+  let a = Rc::new(Cons(5, RefCell::new(Rc::new(Nil))));
+
+  println!("a initial rc count = {}", Rc::strong_count(&a));
+  println!("a next item = {:?}", a.tail());
+
+  let b = Rc::new(Cons(10, RefCell::new(Rc::clone(&a))));
+
+  println!("a rc count after b creation = {}", Rc::strong_count(&a));
+  println!("b initial rc count = {}", Rc::strong_count(&b));
+  println!("b next item = {:?}", b.tail());
+
+  if let Some(link) = a.tail() {
+    *link.borrow_mut() = Rc::clone(&b);
+  }
+
+  println!("b rc count after changing a = {}", Rc::strong_count(&b));
+  println!("a rc count after changing a = {}", Rc::strong_count(&a));
+}
+```
+
+![](https://doc.rust-lang.org/book/second-edition/img/trpl15-04.svg)
+
+由于 `a`、`b` 的引用计数都不为0，二者就都不会被清空，循环引用因此造成**内存泄露**。如果我们在 `main()` 函数的最后加入：
+
+```rust
+ println!("b next item = {:?}", b.tail());
+```
+
+那么将无限循环，并导致栈溢出。
+
+### 使用 `Weak<T>` 来防止循环引用
+
+`Rc<T>` 是代表的是**强引用**，只有当引用计数为 0 时，其实例才会被清除。通过 `Rc::downgrade` ，我们可以将强引用 `Rc<T>` 降为**弱引用** `Weak<T>`。`Rc<T>` 使用 `weak_count` 来追踪弱引用的数目。对于 `Rc<T>` 的清理，不需要弱引用数目为 0。
+
+一旦强引用数目为 0，弱引用就会被切断。因此，在使用弱引用的过程中，我们要确定其目前是否存在。这可以通过调用弱引用上的 `upgrade` 方法，该方法会返回一个 `Option<Rc<T>>`。如果 `Rc<T>` 被释放，则返回 `None`，否则返回 `Some(Rc<T>)`。
+
+### 示例：Tree
+
+树是常见的数据结构，我们可以这样定义：
+
+```rust
+use std::rc::Rc;
+use std::cell::RefCell;
+
+struct Node {
+  value: i32,
+  children: RefCell<Vec<Rc<Node>>>,
+}
+
+fn main() {
+  // 新建叶子节点
+  let leaf = Rc::new(Node {
+    value: 3,
+    children: RefCell::new(vec![])
+  });
+
+  // 树干节点
+  let branch = Rc::new(Node {
+    value: 5,
+    children: RefCell::new(vec![Rc::clone(&leaf)]),
+  });
+}
+```
+
+我们看到，树干节点持有了叶子节点的引用（强引用），我们可能还需要叶子节点也持有树干节点，也就是它父亲节点的引用。为此，我们需要在结构体中添加一个 `parent` 属性用来标识父亲节点。现在，我们需要考虑的就是 `parent` 应当是什么类型：
+
+- `Rc<T>`：此时会存在**循环引用**，`leaf.parent` 指向了 `branch`，而 `branch.children` 指向了 `leaf`，这会让 `strong_count` 不为 0。
+
+换一种方式思考，父亲节点销毁时，其子孙应当被销毁，这意味着父亲节点应当持有子孙节点的**强引用**。子孙节点销毁时，父亲节点不应该销毁，因此子孙只应该持有父亲节点的**弱引用**。
+
+综上，`parent` 的类型应当为 `Weak<T>`：
+
+```rust
+use std::rc::{Rc, Weak};
+use std::cell::RefCell;
+
+#[derive(Debug)]
+struct Node {
+    value: i32,
+    parent: RefCell<Weak<Node>>,
+    children: RefCell<Vec<Rc<Node>>>,
+}
+
+fn main() {
+    let leaf = Rc::new(Node {
+        value: 3,
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![]),
+    });
+
+    println!(
+        "leaf strong = {}, weak = {}",
+        Rc::strong_count(&leaf),
+        Rc::weak_count(&leaf),
+    );
+
+    {
+        let branch = Rc::new(Node {
+            value: 5,
+            parent: RefCell::new(Weak::new()),
+            children: RefCell::new(vec![Rc::clone(&leaf)]),
+        });
+
+        *leaf.parent.borrow_mut() = Rc::downgrade(&branch);
+
+        println!(
+            "branch strong = {}, weak = {}",
+            Rc::strong_count(&branch),
+            Rc::weak_count(&branch),
+        );
+
+        println!(
+            "leaf strong = {}, weak = {}",
+            Rc::strong_count(&leaf),
+            Rc::weak_count(&leaf),
+        );
+    }
+
+    println!("leaf parent = {:?}", leaf.parent.borrow().upgrade());
+    println!(
+        "leaf strong = {}, weak = {}",
+        Rc::strong_count(&leaf),
+        Rc::weak_count(&leaf),
+    );
+}
+
+```
+
+
 
