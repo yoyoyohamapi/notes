@@ -4,7 +4,7 @@
 
 Dan 从 CPU 和 IO（网络层） 两个方面描述了未来 React 的异步特性：
 
-![](./Beyond-React/index.png)
+<img src="./Beyond-React/index.png" width="300" />
 
 ## Git 隐喻
 
@@ -12,19 +12,19 @@ Dan 从 CPU 和 IO（网络层） 两个方面描述了未来 React 的异步特
 
 生活中如果没有版本控制，那么所做的一切都是串行的，下一步需要等待上一步的完成，并且也无法实现 undo：
 
-![](./Beyond-React/life-without-git.png)
+<img src="./Beyond-React/life-without-git.png" width="300" />
 
 而如果引入了版本控制，我们可以新建一个分支进行新特性的开发：
 
-![](./Beyond-React/life-with-git.png)
+<img src="./Beyond-React/life-with-git.png" width="300" />
 
 当需要紧急修复 bug 时，我们也可以在 master 上立马作出修改：
 
-![](./Beyond-React/life-with-git-urgent-fix.png)
+<img src="./Beyond-React/life-with-git-urgent-fix.png" width="300" />
 
 之后，rebase 并继续特性的开发：
 
-![](./Beyond-React/life-with-git-rebase.png)
+<img src="./Beyond-React/life-with-git-rebase.png" width="300" />
 
 ## 
 
@@ -32,7 +32,7 @@ Dan 从 CPU 和 IO（网络层） 两个方面描述了未来 React 的异步特
 
 例子，输入框键入内容时，下方的图表执行更新：
 
-![](./Beyond-React/CPU-demo.png)
+<img src="./Beyond-React/CPU-demo.png" width="300" />
 
 以前的 React 更新 Dom 有两个特点：
 
@@ -41,7 +41,7 @@ Dan 从 CPU 和 IO（网络层） 两个方面描述了未来 React 的异步特
 
 在这个例子中，用户输入就应当是一个高优先级的事件，任何细小的输入延迟或者卡顿都会造成用户体验降低。
 
-新的 React 保证当**低优先级的更新**引起渲染时，**高优先级的更新（如用户输入）**不会被阻塞。
+新的 React 保证当**低优先级的更新**引起渲染时，**高优先级的更新（如用户输入）**不会被阻塞。这主要是受益于 [`requestIdleCallback`](https://developers.google.com/web/updates/2015/08/using-requestidlecallback) API。
 
 特点：
 
@@ -54,13 +54,13 @@ Dan 从 CPU 和 IO（网络层） 两个方面描述了未来 React 的异步特
 将 CPU 一例回归到 Git 隐喻上就是：
 
 没有 time slicing 的 React，更新操作是同步的，不可被打断：
-![](./Beyond-React/react-without-time-slicing.png)
+<img src="./Beyond-React/react-without-time-slicing.png" width="300" />
 
 具有 time slicing 的 React，低优先级的更新能够自动被 rebase，不会阻碍高优先级的更新：
 
-![](./Beyond-React/react-with-time-slicing-1.png)
+<img src="./Beyond-React/react-with-time-slicing-1.png" width="300" />
 
-![](./Beyond-React/react-with-time-slicing-2.png)
+<img src="./Beyond-React/react-with-time-slicing-2.png" width="300" />
 
 ## IO：Suspense
 
@@ -68,11 +68,11 @@ IO 层面，面临的挑战就是网络，如何更好地组织异步流程一�
 
 这是一个 Movie app，首页会加载并展示的电影列表：
 
-![](./Beyond-React/movies-index.png)
+<img src="./Beyond-React/movies-index.png" width="300" />
 
 单击列表项，将进入电影详情页面，加载并展示电影详情：
 
-![](./Beyond-React/movies-details.png)
+<img src="./Beyond-React/movies-details.png" width="300" />
 
 在原始的实现中，我们有一个状态量 `showDetail` 标识是否应当展示详情：
 
@@ -189,10 +189,71 @@ React 提出的 IO Suspense 的特点为：
 
 Suspense 同样可以回归到 Git 隐喻：
 
-![](./Beyond-React/react-with-suspense-1.png)
+<img src="./Beyond-React/react-with-suspense-1.png" width="300" />
 
-![](./Beyond-React/react-with-suspense-2.png)
+<img src="./Beyond-React/react-with-suspense-2.png" width="300" />
 
-![](./Beyond-React/react-with-suspense-3.png)
+<img src="./Beyond-React/react-with-suspense-3.png" width="300" />
 
-![](./Beyond-React/react-with-suspense-4.png)
+<img src="./Beyond-React/react-with-suspense-4.png" width="300" />
+
+## Suspense 原理
+
+React 是如何实现当数据尚未加载完毕，不进行渲染呢。我们可以看到 `createFetcher` 的一个[简易实现](https://twitter.com/jamiebuilds/status/969169357094842368)：
+
+```js
+function createFetcher(method) {
+  let resolved = new Map();
+  return {
+    read(key) => {
+      if (!resolved.has(key)) {
+        throw method(...args).then(val => resolved.set(key, val));
+      }
+      return resolved.get(key);
+    }
+  };
+}
+```
+
+第一次拉取数据时，缓存（缓存通过 React Context API 在各个组件之间共享）中没有命中，将 `throw` 一个 promise 对象。然后，通过 `componentDidCatch` 生命周期捕获到这个 promise:
+
+```js
+class Profile extends React.Component {
+  state = { 
+    isLoading: false,
+    pendingRequests: 0, // keep a counter of pending requests   
+  }
+  componentDidCatch(error, info) {
+    // `error` is a Promise
+    // 每次新到一个 `error`，意味着有一次新的 IO 请求
+    // 更新 `pendingRequets` 状态
+    this.setState(prevState => {
+      return {
+        pendingRequests: prevState.pendingRequests + 1
+      }
+    })
+    
+    error.then(() => 
+      // 请求完成，刷新 `pendingRequests` 计数
+      // 当所有请求完成，刷新加载态
+      this.setState(prevState => {
+        const pendingRequests = prevState.pendingRequests - 1
+        return {
+          pendingRequests,
+          isLoading: pendingRequests !== 0
+        }
+      }) 
+    )
+  }
+  render() {
+    return this.state.isLoading
+      ? 'Spinner...'
+      : this.props.children
+  }
+}
+```
+
+## 参考资料
+
+- [React Suspense for the layman](https://medium.com/@lmatteis/react-suspense-for-the-layman-caae7f48686f)
+
