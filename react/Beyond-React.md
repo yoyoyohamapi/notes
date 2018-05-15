@@ -253,6 +253,14 @@ class Profile extends React.Component {
 }
 ```
 
+## 补充
+
+Andrew Clark 在其 twitter 上有一条[推文]()形象地解释了 React 的异步渲染：
+
+<img src="./Beyond-React/react-async-render-1.jpg"/>
+
+<img src="./Beyond-React/react-async-render-2.jpg"/>
+
 ## 参考资料
 
 - [React Suspense for the layman](https://medium.com/@lmatteis/react-suspense-for-the-layman-caae7f48686f)
