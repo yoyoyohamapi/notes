@@ -1,4 +1,4 @@
-aa阅读笔记
+阅读笔记
 
 - [Under the hood ReactJS](./under-the-hood-reactjs)
 - [How JavaScript Works](./how-javascript-works)

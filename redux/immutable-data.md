@@ -253,4 +253,3 @@ a.visibleToDos === b.visibleToDos
 - [Immutable Data](https://redux.js.org/faq/immutable-data#benefits-of-immutability)
 - [JavaScript Immutability presentation (PDF - see slide 12 for benefits)](https://www.jfokus.se/jfokus16/preso/JavaScript-Immutability--Dont-Go-Changing.pdf) 
 - [React.js pure render performance anti-pattern](https://medium.com/@esamatti/react-js-pure-render-performance-anti-pattern-fb88c101332f)
-
