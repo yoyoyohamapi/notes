@@ -1,4 +1,4 @@
-a阅读笔记
+aa阅读笔记
 
 - [Under the hood ReactJS](./under-the-hood-reactjs)
 - [How JavaScript Works](./how-javascript-works)
@@ -7,4 +7,5 @@ a阅读笔记
 - [JavaScript 性能优化](./javascript-performance)
 - [React](./react)
 - [React 16](./react-16)
+- [Redux](./redux)
 
