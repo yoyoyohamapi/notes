@@ -211,5 +211,8 @@ function Child() {
 
 ```
 
+## 参考资料
 
+- [Portals](https://reactjs.org/docs/portals.html)
+- [React Fiber v16 Essentials](https://www.udemy.com/react-fiber-v16-essentials/learn/v4/overview)
 

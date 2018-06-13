@@ -227,3 +227,8 @@ Facebook 这么做是认为，一旦有错，使得应用崩溃或许更好，�
 
 那么，为了让应用不崩溃，也迫使开发者更注重错误捕获，错误日志上报等提升应用健壮性的习惯。
 
+## 参考资料
+
+- [Error Boundaries](https://reactjs.org/docs/error-boundaries.html)
+- [React Fiber v16 Essentials](https://www.udemy.com/react-fiber-v16-essentials/learn/v4/overview)
+
