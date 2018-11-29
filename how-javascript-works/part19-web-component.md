@@ -249,5 +249,171 @@ class MyCustomElement extends HTMLElement {
 }
 ```
 
+## 继承与扩展
 
+借助于 class，我们还可以通过 extends 实现自定义元素的扩展：
 
+```js
+class MyAwesomeButton extends MyButton {
+  // ...
+}
+
+customElements.define('my-awesome-button', MyAwesomeButton)
+```
+
+如果是要继承内置元素，我们还需要传递第三个参数，声明我们想要从哪个内置元素进行继承，因为有许多不同的内置元素继承自同一个类：
+
+```js
+class MyButton extends HTMLButtonElement {
+  // ...
+}
+
+customElements.define('my-button', MyButton, {extends: 'button'})
+```
+
+> 需要注意的是，继承内置元素现在只有 Chrome 67+ 支持。
+
+## 更新元素
+
+我们使用 `customeElements.define(...)` 完成了元素的注册。如果我们想要知道某个元素完成了注册，就可以使用下面的方式：
+
+```js
+customElements.whenDefined('my-custom-element').then(_ => {
+  console.log('My custom element is defined');
+});
+```
+
+这是因为元素的注册可以延后，比如我们需要顺序注册一些元素时，我们可以先通过 `whenDefined` 声明好该元素注册后的行为。
+
+## shadow DOM
+
+自定义元素和 shadow DOM 最好配合使用。前者用于组件化开发，将组件逻辑进行内聚。后者则是为组件中的 DOM 创建了一个隔离的环境。
+
+为了在自定义元素中使用 shadow DOM，你可以使用 `this.attachShadow` 将 shadow DOM 绑定到当前元素：
+
+```js
+class MyCustomElement extends HTMLElement {
+  // ...
+  
+  constructor() {
+    super();
+    
+    const shadowRoot = this.attachShadow({mode: 'open'})
+    const elementContent = document.createElement('div')
+    
+    shadowRoot.appendChild(elementContent)
+  }
+}
+```
+
+## 模板
+
+有了 shadow DOM，我们还可以使用模板来解耦 shadow DOM 中的 UI 到模板，从而分离 UI 和 JavaScript 逻辑：
+
+```html
+<template id="my-custom-element-template">
+  <div class="my-custom-element">
+    <input type="text" class="email" />
+    <button class="submit"></button>
+  </div>
+</template>
+```
+
+```js
+const myCustomElementTemplate = document.querySelector('#my-custom-element-template')
+
+class MyCustomElement extends HTMLElement {
+  // ...
+  
+  constructor() {
+    super()
+    
+    const shadowRoot = this.attachShadow({mode: 'open'})
+    shadowRoot.appendChild(myCustomElementTemplate.content.cloneNode(true))
+  }
+}
+```
+
+## 样式
+
+声明自定义元素样式的方式和声明一般元素的样式一致：
+
+```css
+my-custom-element {
+  border-radius: 5px;
+  width: 30%;
+  height: 50%;
+  // ...
+}
+```
+
+有时候，我们希望在元素定义（注册）后再声明样式，这可以这么做：
+
+```css
+my-button:not(:defined) {
+  height: 20px;
+  width: 50px;
+  opacity: 0;
+}
+```
+
+## Unknown elements 与 undefined custom elements
+
+如果浏览器未能识别标签，那么它会被解析为 `HTMLUnknownElement`：
+
+```js
+const element = document.createElement('thisElementIsUnknown')
+
+if (element instanceof HTMLUnknownElement) {
+  console.log('The selected element is unknown')
+}
+```
+
+但是，这对自定义元素并不适用，如果某个元素没有被定义，则会被浏览器解析为 `HTMLElement` ，并被当做一个未定义（undefined）元素：
+
+```js
+const element = document.createElement('this-element-is-undefined');
+
+if (element instanceof HTMLElement) {
+  console.log('The selected element is undefined but not unknown');
+}
+```
+
+## 浏览器支持
+
+通过下面的手段可以探测浏览器是否支持自定义元素，如果不支持，就考虑使用 polyfill：
+
+```js
+function loadScript(src) {
+  return new Promise(function(resolve, reject) {
+    const script = document.createElement('script');
+
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+
+    document.head.appendChild(script);
+  });
+}
+
+const supportsCustomElements = 'customElements' in window;
+
+if (supportsCustomElements) {
+  // Browser supports custom elements natively. You're good to go.
+} else {
+  loadScript('path/to/custom-elements.min.js').then(_ => {
+    // Custom elements polyfill loaded. You're good to go.
+  });
+}
+```
+
+## 总结
+
+Web Component 能给你下面这些能力：
+
+- 封装 JavaScript 逻辑及 CSS 样式到一个新的 HTML 元素
+- 允许你扩展现有的 HTML 元素
+- 不需要引入第三方库
+- 可以与其他特性无缝衔接（如 shadow DOM， templates， slots 等等）
+- 适配浏览器的 dev tools
+- 能够利用现有的可访问性特性
