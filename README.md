@@ -9,3 +9,4 @@
 - [React 16](./react-16)
 - [Redux](./redux)
 
+- [Cycle.js](./cyclejs)
