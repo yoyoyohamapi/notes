@@ -5,6 +5,7 @@
 - [Rust](./rust)
 - [函数式编程](./functional-programming)
 - [JavaScript 性能优化](./javascript-performance)
+- [JavaScript 测试](./javascript-test)
 - [React](./react)
 - [React 16](./react-16)
 - [Redux](./redux)
