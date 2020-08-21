@@ -17,7 +17,7 @@
 
 Rust 引入的所有权机制能帮助解决下面这些问题：
 
-- 跟踪代码中的哪些部分正在只用堆上的数据
+- 跟踪代码中的哪些部分正在使用堆上的数据
 - 最小化堆上的冗余数据
 - 清除堆上没有使用的数据
 
@@ -27,7 +27,7 @@ Rust 中的所有权规则如下：
 
 - Rust 中的每一个值都对应一个变量，该变量被叫做这个值的所有者（owner）
 - 同一时刻，值的所有者只能有一个
-- 当所有者离开了作用域，值就要被释放
+- 当所有者离开了作用域，值就要被释放（值的掌管者不存了，值也就不再被需要了）
 
 ## 变量作用域
 
@@ -38,7 +38,7 @@ Rust 中的所有权规则如下：
     let s = "hello";   // s is valid from this point forward
 
     // do stuff with s
-}  
+}
 ```
 
 这里注意两点：
@@ -68,24 +68,22 @@ println!("{}", s); // This will print `hello, world!`
 
 在这个例子中，为了支持字符串的内容可变，就需要：
 
-1. 必选在运行时向操作系统请求内存。
-2. 当工作完成时，我们需要返回内存给操作系统。
-
-
+1. 必须在「运行时」向操作系统请求内存。
+2. 当工作完成时，我们需要释放内存给操作系统。
 
 在使用了 GC 的语言中，程序员不需要关心内存的清除，GC 会跟踪变量并且清除不再使用的内存。而在没有 GC 的语言中，开发者需要手动清理内存。Rust 不同于两者，其规定了：
 
-> 如果变量离开了它的作用域，它就需要被清空。
+「如果变量离开了它的作用域，它就需要被清空」
 
 例如下面这段代码，Rust 会在 `s` 离开作用域时，清空其所占的内存：
 
 ```js
 {
-    let s = String::from("hello");
+  let s = String::from("hello");
 }
 ```
 
-这里实际上调用了 `drop` 函数进行内存清理，`String` 也有对应的 `drop` 实现。
+这里内部调用了 `drop` 函数进行内存清理，`String` 也有对应的 `drop` 实现。
 
 ## 变量和数据的交互方式：移动（Move）
 
@@ -96,10 +94,10 @@ let x = 5;
 let y = x;
 ```
 
-由其他语言的知识，我们不难推测：
+由其他语言的知识，我们可以认为这段代码是要：
 
 1. 将值 `5` 绑定到变量 `x` 上；
-2. 创建一份 `x` 的拷贝，并将绑定该拷贝到 `y` 上。
+2. 创建一份 `x` 值的拷贝（这里拷贝了 5），并将值绑定到 `y` 上。
 
 实际上也确实如此，由于 `5` 是已知且大小固定的，所以两个 `5` 都被 push 进了栈中。
 
@@ -126,9 +124,7 @@ let s2 = s1;
 
 ![](https://doc.rust-lang.org/book/second-edition/img/trpl04-02.svg)
 
-
-
-Rust 不会也复制堆上的内容，就像下图一样，因为假如数据很大，进行堆上的复制会带来高昂的运行时开销：
+但 Rust 不会复制堆上的内容，就像下图一样，因为假如数据很大，进行堆上的复制来实现 `s2=s1` 会带来高昂的运行时开销：
 
 ![](https://doc.rust-lang.org/book/second-edition/img/trpl04-03.svg)
 
@@ -138,7 +134,7 @@ Rust 不会也复制堆上的内容，就像下图一样，因为假如数据很
 
 ```rust
 let s1 = String::from("hello");
-let s2 = s1;
+let s2 = s1; // 这句话让 Rust 认为 s1 不再被需要了
 
 println!("{}, world!", s1);
 ```
@@ -159,7 +155,7 @@ error[E0382]: use of moved value: `s1`
   not implement the `Copy` trait
 ```
 
-只拷贝元信息（指针、长度、容量），而不拷贝数据，这样的拷贝可以叫做是浅拷贝。Rust 在浅拷贝的基础上海多了一步：使 `s1` 无效化，因此，Rust 不将这个过程叫做浅拷贝，而是命名为**移动**。
+只拷贝元信息（指针、长度、容量），而不拷贝数据，这样的拷贝可以叫做是浅拷贝。Rust 在浅拷贝的基础上海多了一步：使 `s1` 无效化（这样 s1 使用的栈内存也会得到释放），因此，Rust 不将这个过程叫做浅拷贝，而是命名为**移动**。
 
 ![](https://doc.rust-lang.org/book/second-edition/img/trpl04-04.svg)
 
@@ -203,19 +199,19 @@ fn main() {
 
     let x = 5;                      // x 进入了作用域。
 
-    makes_copy(x);                  // x 的值被拷贝到了函数，因此后续能够继续使用 x。
+    makes_copy(x);           // x 的值被拷贝到了函数，因此后续能够继续使用 x。
 
-} 
+}
 // 此处，x 先离开作用域，s 后离开作用域，由于 s 已经被移动，因此不会有额外操作。
 
 fn takes_ownership(some_string: String) { // some_string 进入作用域。
     println!("{}", some_string);
-} 
+}
 // 此处，some_string 离开作用域并且 `drop` 被调用。其占用的内存被释放。
 
 fn makes_copy(some_integer: i32) { // some_integer 进入作用域。
     println!("{}", some_integer);
-} 
+}
 // 此处，some_integer 离开作用域。由于其类型已经具有了 Copy trait，就不再有 Drop trait，因此什么都不会发生。
 ```
 
@@ -229,9 +225,9 @@ fn main() {
 
     let s2 = String::from("hello");     // s2 进入作用域
 
-    let s3 = takes_and_gives_back(s2);  // s2 的所有权被移动到了 takes_and_gives_back, 
+    let s3 = takes_and_gives_back(s2);  // s2 的所有权被移动到了 takes_and_gives_back,
                                         // 该函数又将其返回值的所有权移动到了 `s3`
-} 
+}
 // 此处，s3 离开了作用域并被 drop 掉。s2 离开了作用域，但由于其移动过，因此无需 drop。
 // s1 离开作用域并被 drop。
 

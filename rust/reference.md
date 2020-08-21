@@ -4,6 +4,8 @@
 fn main() {
     let s1 = String::from("hello");
 
+    // 这里只是创建了 s1 的引用 s，s 将指向 s1，
+    // s1 的所有权因此没有发生转移，得到保留
     let len = calculate_length(&s1);
 
     println!("The length of '{}' is {}.", s1, len);
@@ -44,7 +46,7 @@ error[E0596]: cannot borrow immutable borrowed content `*some_string` as mutable
 
 ## 可变引用
 
-为了这个，我们可以使用**可变引用**：
+为了能够改变引用指向的内容，我们可以使用**可变引用**：
 
 ```rust
 fn main() {
@@ -96,7 +98,7 @@ let mut s = String::from("hello");
 } // r1 已经离开了作用域，因此我们再度创建 s 的可变引用是没用问题的。
 
 let r2 = &mut s;
-``` 
+```
 
 类似地，可以创建多个不可变引用，但是在创建不可变引用之后，不能再创建可变引用，这也是要从源头上遏制数据竞争：
 
@@ -136,7 +138,7 @@ fn main() {
 fn dangle() -> &String {
     let s = String::from("hello");
 
-    &s // 返回一个字符串的引用，但是因为 s 已经离开了作用域，因此其会被释放，造成了引用悬空
+    &s // 返回一个字符串的引用，但是因为 s 已经离开了作用域，因此其会被释放，造成了引用悬空（引用指向了一个不存在的内存空间）
 }
 ```
 

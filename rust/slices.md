@@ -25,7 +25,7 @@ fn first_word(s: &String) -> &str {
 }
 
 fn main() {
-    let mut s = String::from("hello world");
+    let s = String::from("hello world");
 
     let word = first_word(&s);
 
