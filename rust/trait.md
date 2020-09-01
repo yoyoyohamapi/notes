@@ -1,14 +1,14 @@
 # Trait（特性）
 
-Trait 类似接口，用来承载**共享行为**，首先，定义 trait：
+Trait 类似接口，用来承载**共享行为**，首先，使用 trait 来声明一个特性。例如，下面我们声明了 一个 `Summarizable` trait，要让某个对象是 Summarizable 的，就要实现 `summary` 方法
 
 ```rust
-pub trait Summarizable {
+nnpub trait Summarizable {
     fn summary(&self) -> String;
 }
 ```
 
-上面的代码定义了一个 `Summarizable` ，实现其方法 `summary` 后，将拥有**归纳的**特性：
+例如，一篇新闻就是 Summrizable 的，其 summary 就是时间、地点、人物；一篇推文也是 Summrizable 的，它的 summary 就是用户和内容。
 
 ```rust
 pub struct NewsArticle {
@@ -159,3 +159,45 @@ fn main() {
 ```
 
 这是因为比较操作符需要对象具备 `PartialOrd` trait，而对象赋值则需要具备 `Copy` trait。
+
+## 使用 Trait Bounds 有条件地实现某方法
+
+下面，我们定义了一个简单的结构体，并且为其实现了 `new` 方法：
+
+```rust
+use std::fmt::Display;
+
+struct Pair<T> {
+  x: T,
+  y: T,
+}
+
+impl<T> Pair<T> {
+  fn new(x: T, y: T) -> Self {
+    Self {x, y}
+  }
+}
+```
+
+如果泛型 T 实现了 `Display` 和 `PartialOrd` Trait，我们就为这个 Pair 实现 `cmp_display()` 方法：
+
+```rust
+impl<T: Display + PartialOrd> Pair<T> {
+  fn cmp_display(&self) {
+    if self.x >= self.y {
+      println!("The largest member is x = {}", self.x);
+    } else {
+      println!("The largest member is y = {}", self.y);
+    }
+  }
+}
+```
+
+我们也可以为实现了某个 Trait 的泛型继续实现另外的 Trait：
+
+```rust
+impl<T: Display> ToString fro T {
+  // ---snip---
+}
+```
+

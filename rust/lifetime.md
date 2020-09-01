@@ -1,6 +1,6 @@
 # Lifetime
 
-Rust 使用 Lifetime 机制来避免**悬摆引用**，提高代码安全和健壮性：
+在 Rust 中，每个引用都是有生命期的，它描述了引用的有效范围。例如下面的代码中，当 `x` 离开了作用域之后，其引用 `r` 由于是定义在更靠外的作用于的，因此仍然有效，但指向了不可靠的位置，造成了悬摆引用：
 
 ```rust
 {
@@ -29,7 +29,7 @@ error: `x` does not live long enough
    | - borrowed value needs to live until here
 ```
 
-当 `x` 离开作用域被清空时，其引用 `r` 不知指向何处，是非常不安全的。
+为此，Rust 引出了生命期（lifetime）的概念。，
 
 ## Borrow Checker
 
@@ -97,9 +97,9 @@ error[E0106]: missing lifetime specifier
    signature does not say whether it is borrowed from `x` or `y`
 ```
 
-`result` 是一个引用，上述代码无法使用 Borrow Checker 比较引用（`result`）和引用内容（`string1`, `string2`）的生命期，因此被 Rust 认为是不安全的。
+Rust 的 Borrow Checker 无法知道引用 `result` 到底是 `x` 还是 `y`，因此无法通过上面的比较法则，知悉引用 `result` 是否会比它所引用的内容 `string1` 或者 `string2` 存活地更久，如果是的话，那势必又将造成悬摆引用，Rust 认为这是不安全的。
 
-为了解决这个问题，我们在函数签名中声明 lifetime：
+为此，Rust 引入了生命期（lifetime）的概念，允许开发者声明引用的生命期。下面的代码中，声明了返回的引用将会和 `x`、`y` 存活一样久，这样 Rust 就知道了，`longest` 返回的引用将会和引用的内容存活一样久，不会出现悬摆引用：
 
 ```rust
 fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
@@ -111,9 +111,7 @@ fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
 }
 ```
 
-现在，函数返回的引用将与其参数拥有同样的生命期，即 `result` 将会和 `string1`、`string2` 存活同样久，当 `string1`、`string2` 被销毁时，引用的生命期也结束了，避免了悬摆引用的产生。
-
-下面这段代码所以也是没问题的：
+而对于下面这段代码，当 `string2` 离开作用域后，由于我们声明了 `result` 会存活与其参数一样久，因此，`result` 也离开了作用域，被销毁，避免了悬摆引用出现。
 
 ```rust
 fn main() {
@@ -126,8 +124,6 @@ fn main() {
     }
 }
 ```
-
-当 `string2` 离开作用域时， `result` 也离开作用域，而被销毁。不存在悬摆引用。
 
 再看到下面的代码，`string2` 离开了作用域，`result` 在作用域外部仍被使用，可能造成悬摆引用。因此无法通过编译。
 
@@ -157,6 +153,8 @@ error: `string2` does not live long enough
 
 ## 结构体中的 lifetime 声明
 
+如果我们的结构体属性是一个引用，就可能出现，当结构体销毁了，属性引用仍然存在的问题，也会出现悬摆引用，因此，Rust 也支持为结构体声明生命期。下面的代码中，我们就告诉了 Rust，`part` 不会比 `ImportantExcerpt` 活的久。
+
 ```rust
 struct ImportantExcerpt<'a> {
     part: &'a str,
@@ -171,11 +169,9 @@ fn main() {
 }
 ```
 
-这里的 lifetime 声明保证了结构体属性不会比结构体存活更久。
-
 ## 省略 lifetime 声明
 
-编译时，Rust 遵从以下规则声明 lifetime：
+当然，为所有的引用声明 lifetime 也太啰嗦了。编译时，Rust 遵从以下规则隐式声明 lifetime：
 
 1. 为各个参数声明一个 lifetime，`fn foo<'a, 'b>(x: &'a i32, y: &'b i32)`。
 2. 如果入参中只有一个声明了 lifetime，则函数输出与此拥有一致的 lifetime：`fn foo<'a>(x: &'a i32) -> &'a i32`。
@@ -190,13 +186,13 @@ fn main() {
 fn first_word(s: &str) -> &str {
 ```
 
-根据第一条规则，会被翻译成：
+根据第一条规则，会被翻译成，保证各个引用有 lifetime：
 
 ```rust
 fn first_word<'a>(s: &'a str) -> &str {
 ```
 
-根据第二条规则，进而被翻译成：
+根据第二条规则，进而被翻译成，保证返回的引用存活的与参数引用一样久：
 
 ```rust
 fn first_word<'a>(s: &'a str) -> &'a str {
@@ -208,7 +204,7 @@ fn first_word<'a>(s: &'a str) -> &'a str {
 fn longest(x: &str, y: &str) -> &str {
 ```
 
-根据第一条规则，会被翻译为：
+根据第一条规则，会被翻译为，保证各个引用有 lifetime：
 
 ```rust
 fn longest<'a, 'b>(x: &'a str, y: &'b str) -> &str {
@@ -227,7 +223,7 @@ impl<'a> ImportantExcerpt<'a> {
 }
 ```
 
-根据第一条规则，会被翻译为：
+根据第一条规则，会被翻译为，保证各个引用有 lifetime：
 
 ```rust
 impl<'a> ImportantExcerpt<'a> {
@@ -238,7 +234,7 @@ impl<'a> ImportantExcerpt<'a> {
 }
 ```
 
-再根据第三条规则，会被翻译为：
+再根据第三条规则，会被翻译为，保证返回的引用存活的与当前对象引用一样久：
 
 ```rust
 impl<'a> ImportantExcerpt<'a> {
@@ -256,3 +252,26 @@ let s: &'static str = "I have a static lifetime.";
 ```
 
 `'static` 声明的 lifetime 是整个程序的生命期，避免滥用。
+
+## Demo
+
+下面的这个 Demo 结合了泛型，lifetime，trait bounds：
+
+```rust
+use std:fmt::Display;
+
+fn longest_with_an_announcement<'a, T>(
+  x: &'a str,
+  y: &'a str,
+  ann: T,
+) -> &'a str
+where T: Display {
+  println!("Announcement! {}", ann);
+  if x.len() > y.len() {
+    x
+  } else {
+    y
+  }
+}
+```
+

@@ -226,7 +226,7 @@ failures:
 test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
-并不能看到 `I got the value xxx`。通过为测试命令制定 `nocapture` 标识，来禁止测试捕获函数输出：
+控制台中并不能看到 `I got the value xxx`。通过为测试命令制定 `nocapture` 标识，来禁止测试拦截≥函数输出：
 
 ```
 cargo test -- --nocapture
