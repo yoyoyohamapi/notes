@@ -124,7 +124,7 @@ let u = s;
 
 在内存中，Rust 既不像 Python 那样使用引用计数，也不像 C++ 那样在堆上复制，而是转移了 vector 的所有权：
 
-<img src="./ownership/rust_assignment.png" style="zoom:50%;" />
+<img src="./ownership/rust_assignment.png" style="zoom: 33%;" />
 
 当我们把 `s` 再赋值给 `t` 时，vector 的所有权也被「转移」到了 `t`，此时 `s` 不再有效，因此上述的代码会在编译器报错：
 
@@ -168,5 +168,5 @@ let num1:i32 = 36;
 let num2 = num1;
 ```
 
-<img src="./ownership/copy_number.png" style="zoom:50%;" />
+<img src="./ownership/copy_number.png" style="zoom: 33%;" />
 
