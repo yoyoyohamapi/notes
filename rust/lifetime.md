@@ -1,6 +1,6 @@
 # Lifetime
 
-在 Rust 中，每个引用都是有生命期的，它描述了引用的有效范围。例如下面的代码中，当 `x` 离开了作用域之后，其引用 `r` 由于是定义在更靠外的作用于的，因此仍然有效，但指向了不可靠的位置，造成了悬摆引用：
+在 Rust 中，每个引用都是有寿命的，它描述了引用的有效范围。例如下面的代码中，当 `x` 离开了作用域之后，其引用 `r` 由于是定义在更靠外的作用于的，因此仍然有效，但指向了不可靠的位置，造成了悬摆引用：
 
 ```rust
 {
@@ -29,7 +29,7 @@ error: `x` does not live long enough
    | - borrowed value needs to live until here
 ```
 
-为此，Rust 引出了生命期（lifetime）的概念。，
+为此，Rust 引出了寿命（lifetime）的概念。，
 
 ## Borrow Checker
 
@@ -48,7 +48,7 @@ error: `x` does not live long enough
 }
 ```
 
-我们用 `'a` 标识 `r` 的生命期，用 `'b` 标识 `x` 的生命期，可以看到，**引用比引用内容存活得久**，这会造成悬摆引用。
+我们用 `'a` 标识 `r` 的寿命，用 `'b` 标识 `x` 的寿命，可以看到，**引用比引用内容存活得久**，这会造成悬摆引用。
 
 再看到下面的代码：
 
@@ -99,7 +99,7 @@ error[E0106]: missing lifetime specifier
 
 Rust 的 Borrow Checker 无法知道引用 `result` 到底是 `x` 还是 `y`，因此无法通过上面的比较法则，知悉引用 `result` 是否会比它所引用的内容 `string1` 或者 `string2` 存活地更久，如果是的话，那势必又将造成悬摆引用，Rust 认为这是不安全的。
 
-为此，Rust 引入了生命期（lifetime）的概念，允许开发者声明引用的生命期。下面的代码中，声明了返回的引用将会和 `x`、`y` 存活一样久，这样 Rust 就知道了，`longest` 返回的引用将会和引用的内容存活一样久，不会出现悬摆引用：
+为此，Rust 引入了 lifetime 的概念，允许开发者声明引用的寿命。下面的代码中，声明了返回的引用将会和 `x`、`y` 存活一样久，这样 Rust 就知道了，`longest` 返回的引用将会和引用的内容存活一样久，不会出现悬摆引用：
 
 ```rust
 fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
@@ -153,7 +153,7 @@ error: `string2` does not live long enough
 
 ## 结构体中的 lifetime 声明
 
-如果我们的结构体属性是一个引用，就可能出现，当结构体销毁了，属性引用仍然存在的问题，也会出现悬摆引用，因此，Rust 也支持为结构体声明生命期。下面的代码中，我们就告诉了 Rust，`part` 不会比 `ImportantExcerpt` 活的久。
+如果我们的结构体属性是一个引用，就可能出现：当属性引用的内容被销毁了，由于结构体没有被销毁，其属性的引用就会变成悬摆引用，因此，Rust 也支持为结构体属性声明 lifetime。下面的代码中，我们就告诉了 Rust， `ImportantExcerpt` 实例不会比 `part` 活的久，当 `part` 引用的内容销毁后，结构体也会被销毁：
 
 ```rust
 struct ImportantExcerpt<'a> {
@@ -251,7 +251,7 @@ impl<'a> ImportantExcerpt<'a> {
 let s: &'static str = "I have a static lifetime.";
 ```
 
-`'static` 声明的 lifetime 是整个程序的生命期，避免滥用。
+`'static` 声明的 lifetime 是整个程序的寿命，避免滥用。
 
 ## Demo
 
