@@ -3,7 +3,7 @@
 Trait 类似接口，用来承载**共享行为**，首先，使用 trait 来声明一个特性。例如，下面我们声明了 一个 `Summarizable` trait，要让某个对象是 Summarizable 的，就要实现 `summary` 方法
 
 ```rust
-nnpub trait Summarizable {
+pub trait Summarizable {
     fn summary(&self) -> String;
 }
 ```
